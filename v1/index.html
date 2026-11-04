@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#112b41">
+  <meta name="description" content="Compare U.S. counties for multifamily solar using electricity prices, standardized annual solar yield, and their combined retail value.">
+  <title>Multifamily Solar Opportunity | ShineIQ</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="vendor/d3.min.js" defer></script>
+  <script src="app.js" defer></script>
+</head>
+<body><nav aria-label="Atlas versions" style="display:flex;justify-content:flex-end;gap:16px;padding:10px 24px;background:#f4f8f7;border-bottom:1px solid #d4e0e8;font:600 12px system-ui;color:#163d59"><a style="color:inherit" href="/">Atlas home</a><a style="color:inherit" href="/v1/">V1</a><a style="color:inherit" href="/v2/">V2</a></nav>
+  <header class="topbar">
+    <a class="brand" href="./" aria-label="ShineIQ Solar Opportunity home"><span class="brand-sun" aria-hidden="true">✳</span><span>Shine<span class="brand-iq">IQ</span></span><span class="brand-divider"></span><span class="brand-section">Market intelligence</span></a>
+    <div class="top-actions"><span class="private-label"><span class="status-dot"></span> National screening study</span><button class="text-button" id="method-button">Method & sources <span aria-hidden="true">↗</span></button></div>
+  </header>
+  <main>
+    <section class="intro">
+      <div><p class="eyebrow">MULTIFAMILY SOLAR · UNITED STATES</p><h1>Find the strongest solar markets.</h1><p class="intro-text">See where valuable electricity meets productive solar. Compare counties using the same reference installation.</p></div>
+      <div class="intro-actions"><button class="button" id="download-map"><span aria-hidden="true">↓</span> Export map</button><button class="button primary" id="download-csv"><span aria-hidden="true">↓</span> Download data</button></div>
+    </section>
+    <section class="controls" aria-label="Comparison controls">
+      <div class="control-group rate-control"><label for="price-basis">ELECTRICITY PRICE BASIS</label><select id="price-basis"><option value="res">Residential meter benchmark</option><option value="com">Commercial meter comparison</option></select></div>
+      <div class="control-group"><label for="state-filter">GEOGRAPHY</label><select id="state-filter"><option value="all">All 50 states + D.C.</option></select></div>
+      <div class="control-group search-control"><label for="county-search">FIND A COUNTY</label><div class="search-wrap"><span aria-hidden="true">⌕</span><input id="county-search" type="search" placeholder="County, state, or FIPS…" autocomplete="off" list="county-options"><datalist id="county-options"></datalist></div></div>
+      <label class="check-control"><input type="checkbox" id="include-fallback" checked><span>Include state price estimates</span><span class="info" title="Where a comparable local utility price cannot be assigned, the same-year state sector average is shown and clearly labeled.">i</span></label>
+    </section>
+    <div class="basis-note" id="basis-note">Residential-sector average electricity prices are a benchmark for multifamily residential service. Check the actual meter tariff before assessing a property.</div>
+    <section class="stats" aria-label="Dataset summary">
+      <div class="stat"><span class="stat-label">COUNTIES IN VIEW</span><div class="stat-value" id="stat-count">—</div><span class="stat-note" id="stat-coverage">Loading verified data</span></div>
+      <div class="stat"><span class="stat-label">MEDIAN ELECTRICITY PRICE</span><div class="stat-value" id="stat-rate">—</div><span class="stat-note">2025 annual sector average</span></div>
+      <div class="stat"><span class="stat-label">MEDIAN SOLAR YIELD</span><div class="stat-value" id="stat-yield">—</div><span class="stat-note">kWh / kW DC / year</span></div>
+      <div class="stat high-stat"><span class="stat-label">HIGH ON BOTH</span><div class="stat-value" id="stat-both">—</div><span class="stat-note">At or above each national 67th percentile</span></div>
+    </section>
+    <section class="map-layout">
+      <div class="map-card">
+        <div class="map-top"><div class="view-tabs" role="tablist" aria-label="Map measure"><button role="tab" aria-selected="true" class="active" data-view="value">Combined value</button><button role="tab" aria-selected="false" data-view="rate">Electricity price</button><button role="tab" aria-selected="false" data-view="yield">Solar yield</button><button role="tab" aria-selected="false" data-view="both">High on both <span class="tab-dot"></span></button></div></div>
+        <div class="map-heading"><div><h2 id="map-title">Annual retail-value potential</h2><p id="map-subtitle">Electricity price × annual solar yield · $ per kW DC per year</p></div><span class="map-count" id="map-count">National view</span></div>
+        <div class="map-stage"><svg id="county-map" viewBox="0 0 980 585" role="img" aria-label="United States county map. Search or use the ranked table to choose a county."></svg><div class="map-loading" id="map-loading"><span class="loader"></span><span>Loading county data…</span></div><div class="map-zoom"><button id="zoom-in" aria-label="Zoom in">+</button><button id="zoom-out" aria-label="Zoom out">−</button><button id="zoom-reset" aria-label="Reset map zoom">⤢</button></div><div class="map-help">Select a county to explore · Ctrl + scroll to zoom</div></div>
+        <div class="map-legend" id="map-legend"></div>
+        <div class="map-foot"><span><span class="legend-hatch"></span> State price estimate <span class="legend-missing"></span> No comparable data</span><span id="map-vintage">EIA 2025 · PVGIS 5.3 / ERA5</span></div>
+      </div>
+      <aside class="county-card" aria-label="Selected county details" aria-live="polite">
+        <div class="county-kicker"><span id="detail-state">COUNTY DETAIL</span><span id="detail-rank" class="rank-pill">Select a county</span></div>
+        <h2 id="detail-name">Explore a market</h2><p class="detail-lead" id="detail-lead">Select a county on the map, search above, or choose a row in the ranking.</p>
+        <div id="detail-body" hidden>
+          <div class="detail-value"><span class="detail-label">ANNUAL RETAIL-VALUE POTENTIAL</span><strong id="detail-value">—</strong><span>per kW DC / year</span></div>
+          <div class="detail-pair"><div><span>Electricity price</span><strong id="detail-rate">—</strong><small>per kWh</small></div><div><span>Solar yield</span><strong id="detail-yield">—</strong><small>kWh / kW DC / year</small></div></div>
+          <div class="panel-equivalent"><span class="panel-icon" aria-hidden="true">▦</span><div><strong>595 W equivalent</strong><p><span id="panel-energy">—</span> kWh/year · <span id="panel-value">—</span> retail value/year</p></div></div>
+          <div class="monthly-head"><h3>Production through the year</h3><span>kWh / kW DC</span></div><svg id="monthly-chart" viewBox="0 0 300 106" role="img" aria-label="Monthly solar production"></svg>
+          <div class="quality-box"><span id="detail-method" class="quality-badge">—</span><p id="detail-method-text"></p></div>
+          <details class="utility-details"><summary><span>Utility context</span><span id="utility-count"></span></summary><div id="utility-list"></div></details>
+          <div class="detail-caution">Solar yield is estimated at the county reference point. Actual savings depend on the property, tariff and export rules. The meter arrangement determines whether owners or tenants receive the benefit.</div>
+        </div>
+      </aside>
+    </section>
+    <section class="lower-layout">
+      <div class="scatter-card"><div class="section-head"><div><p class="eyebrow">THE TWO DRIVERS</p><h2>Price meets production.</h2></div><span class="tiny-pill">National thresholds</span></div><p class="card-description">The upper-right region is high on both. Hover or select a point to compare a county.</p><svg id="scatter-chart" viewBox="0 0 660 315" role="img" aria-label="Scatter plot of electricity price and annual solar yield"></svg><p class="chart-note">Each point is a county. The threshold lines stay fixed when you filter by state.</p></div>
+      <div class="interpret-card"><p class="eyebrow">HOW TO READ THIS</p><h2>One reference system.<br>Two useful lenses.</h2><div class="read-item"><span class="read-number">01</span><div><h3>Highest combined value</h3><p>Rank the annual electricity produced by an identical installation at the selected local price benchmark.</p></div></div><div class="read-item"><span class="read-number">02</span><div><h3>High on both</h3><p>Find counties with both electricity prices and solar yields at or above their national 67th percentiles.</p></div></div><div class="equation"><span>kWh / kW / year</span><b>×</b><span>$ / kWh</span><b>=</b><strong>$ / kW / year</strong></div><p class="interpret-foot">Panel size changes the displayed energy, not the normalized geographic comparison. This study does not rank available roof area or total market size.</p></div>
+    </section>
+    <section class="ranking-card"><div class="section-head"><div><p class="eyebrow">EXPLORE THE RANKING</p><h2 id="ranking-title">Counties by combined value</h2></div><div class="table-controls"><label for="table-limit">Show</label><select id="table-limit"><option value="25">25 counties</option><option value="100">100 counties</option><option value="all">All counties</option></select></div></div><p class="card-description" id="ranking-description">Sorted by annual retail-value potential. Select any row to inspect the county.</p><div class="table-scroll"><table><thead><tr><th scope="col">Rank</th><th scope="col">County</th><th scope="col" class="num">Price<br><span>¢ / kWh</span></th><th scope="col" class="num">Solar yield<br><span>kWh / kW / yr</span></th><th scope="col" class="num">Combined value<br><span>$ / kW / yr</span></th><th scope="col">Price basis</th></tr></thead><tbody id="ranking-body"></tbody></table></div><div class="table-footer" id="table-footer"></div></section>
+    <footer class="footer"><div class="footer-brand">Shine<span>IQ</span><small>Multifamily market intelligence</small></div><p id="footer-data">2025 electricity prices · Long-term modeled solar yield · Prepared November 3, 2026</p><button class="text-button" id="footer-method">View sources and assumptions ↗</button></footer>
+  </main>
+  <div id="tooltip" class="tooltip" role="tooltip" hidden></div>
+  <dialog id="method-dialog"><div class="dialog-top"><div><p class="eyebrow">TRANSPARENT BY DESIGN</p><h2>Method & sources</h2></div><button id="close-dialog" class="close-dialog" aria-label="Close methodology">×</button></div><div id="method-content" class="method-content"></div><div class="dialog-bottom"><button class="button primary" id="close-dialog-bottom">Back to the map</button></div></dialog>
+  <div id="toast" role="status" class="toast" hidden></div>
+</body>
+</html>
