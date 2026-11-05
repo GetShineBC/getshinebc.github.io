@@ -47,17 +47,20 @@ let V1_QUALIFIED_ONLY=false;
 // V2 VISUAL HOTFIX END
 
 
-/* V3 fixed return-on-cost bands with smooth shading inside each band.
-   Every threshold is absolute and consistent across all filters.
-   Under 7% is gray; 7-8, 8-9, 9-15, 15-20, and 20%+ have distinct color families.
-   Boundary values 7/8/9/15/20 always enter the band on the right. */
+/* V3 Shine Gray + Gold palette, per Owen's 2026-11-04 review.
+   Leadership-provided original swatches: Davy's Gray #5C5E5C,
+   Battleship Gray #858685, Timberwolf #D6D6D6, Saffron #E6C329,
+   Metallic Gold #CEAC16. Gray denotes lower returns; gold higher returns.
+   Fixed thresholds from the prior version are untouched. Shades vary smoothly
+   INSIDE each range; no national quantiles or dynamic recoloring.
+   At 7/8/9/15/20 exactly, the county enters the new higher category. */
 const V3_RETURN_BANDS = [
- {min:0,max:7,label:'Under 7%',start:'#f6f8fa',end:'#dde4e8'},
- {min:7,max:8,label:'7–8%',start:'#d7e8f0',end:'#bed9e7'},
- {min:8,max:9,label:'8–9%',start:'#a7d2df',end:'#80bbce'},
- {min:9,max:15,label:'9–15%',start:'#65b9bc',end:'#2f91a4'},
- {min:15,max:20,label:'15–20%',start:'#2c799f',end:'#164b7a'},
- {min:20,max:Infinity,label:'20%+',start:'#237e5c',end:'#0a3e42'}
+ {min:0,max:7,label:'Under 7%',start:'#EAEAEA',end:'#D6D6D6'},
+ {min:7,max:8,label:'7–8%',start:'#B1B2B1',end:'#858685'},
+ {min:8,max:9,label:'8–9%',start:'#777977',end:'#5C5E5C'},
+ {min:9,max:15,label:'9–15%',start:'#EFE3B7',end:'#DDC77B'},
+ {min:15,max:20,label:'15–20%',start:'#E6C329',end:'#DDB51E'},
+ {min:20,max:Infinity,label:'20%+',start:'#CEAC16',end:'#997C0E'}
 ];
 function v3ReturnPct(r){return 100*value(r)/INSTALLED_COST_PER_KW_DC;}
 function v3ReturnBand(pct){
@@ -72,7 +75,7 @@ function v3ReturnShade(pct){
  return 'rgb('+a.map((v,i)=>Math.round(v+(b[i]-v)*t)).join(',')+')';
 }
 function v3ReturnLegend(){
- return '<div class="v3-return-legend"><div class="v3-return-legend-title"><strong>Return on Cost (%)</strong><span>Fixed ranges · deeper shades indicate higher values</span></div><div class="v3-return-legend-grid">'+V3_RETURN_BANDS.map(b=>'<div class="v3-return-band"><i aria-hidden="true" style="background:linear-gradient(90deg,'+b.start+','+b.end+')"></i><span>'+b.label+'</span></div>').join('')+'</div></div>';
+ return '<div class="v3-return-legend"><div class="v3-return-legend-title"><strong>Return on Cost (%)</strong><span>Fixed bands · gray = lower, gold = higher</span></div><div class="v3-return-legend-grid">'+V3_RETURN_BANDS.map(b=>'<div class="v3-return-band"><i aria-hidden="true" style="background:linear-gradient(90deg,'+b.start+','+b.end+')"></i><span>'+b.label+'</span></div>').join('')+'</div></div>';
 }
 
 const METRIC = {
