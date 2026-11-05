@@ -52,6 +52,18 @@
 .detail-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
 @media(max-width:1090px){#tab-map .map-layout{grid-template-columns:minmax(0,1fr)}#tab-map .map-layout>.map-panel,#tab-map .map-layout>.detail-panel{grid-column:auto}.v3-intro{padding:14px 18px}.detail-panel{min-height:0}}
 @media(max-width:640px){.v3-intro{flex-direction:column;align-items:stretch;gap:12px}.v3-assumption{text-align:left;min-width:0}.v3-intro h1{font-size:24px}.map-stage{min-height:330px}#usaMap{min-height:330px}.v3-metric-primary strong{font-size:34px!important}}
+
+/* V3 Owen review: fixed % bins, sensitivity via shade gradients within each range */
+#mapLegend:has(.v3-return-legend){flex:1;min-width:0;max-width:720px}
+.v3-return-legend{width:100%;min-width:0;padding:3px 0}
+.v3-return-legend-title{display:flex;justify-content:space-between;align-items:baseline;gap:14px;color:#173d59;margin-bottom:8px}
+.v3-return-legend-title strong{font-size:11px;font-weight:800;color:#173d59}
+.v3-return-legend-title span{font-size:10px;color:#557385}
+.v3-return-legend-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:5px}
+.v3-return-band{min-width:0}
+.v3-return-band i{display:block;height:13px;width:100%;border:1px solid #53687925;border-radius:3px}
+.v3-return-band span{display:block;font-size:10px;font-weight:720;color:#304e62;white-space:nowrap;margin-top:4px;font-variant-numeric:tabular-nums}
+@media(max-width:600px){.v3-return-legend-title{flex-direction:column;align-items:start;gap:3px}.v3-return-legend-grid{gap:3px}.v3-return-band span{font-size:9px}}
 </style>
 </head>
 <body><nav aria-label="Atlas versions" style="display:flex;justify-content:flex-end;gap:16px;padding:10px 24px;background:#f4f8f7;border-bottom:1px solid #d4e0e8;font:600 12px system-ui;color:#163d59"><a style="color:inherit" href="/">Atlas home</a><a style="color:inherit" href="/v1/">V1</a><a style="color:inherit" href="/v2/">V2</a><a style="color:#147b58" href="/v3/" aria-current="page">V3</a></nav>
@@ -87,7 +99,7 @@
     </nav>
 
     <!-- Contextual filter header stays consistent across analytical views. -->
-    <section class="v3-intro" aria-label="Return-on-cost methodology"><div><div class="v3-kicker">SHINEIQ · MARKET ATLAS V3</div><h1>Annual <em>return on cost</em> by county.</h1><p>One map. Annual modeled retail-value potential divided by the installed-cost benchmark; select or hover over any county to explore.</p></div><div class="v3-assumption"><span>INSTALLED COST ASSUMPTION</span><strong>$2.76 / Wdc</strong><small>$2,760 per installed kW DC</small></div></section><div class="filterbar">
+    <section class="v3-intro" aria-label="Return-on-cost methodology"><div><div class="v3-kicker">SHINEIQ · MARKET ATLAS V3</div><h1><em>Return on Cost</em> by county:</h1><p>One map. Annual modeled retail-value potential divided by the installed-cost benchmark; select or hover over any county to explore.</p></div><div class="v3-assumption"><span>INSTALLED COST ASSUMPTION</span><strong>$2.76 / Wdc</strong><small>$2,760 per installed kW DC</small></div></section><div class="filterbar">
       <div class="filtergroup"><label for="sectorSelect">RATE CLASS</label><select id="sectorSelect" aria-label="Electricity rate class"><option value="res">Residential service</option><option value="com">Commercial service</option></select></div>
       <div class="filtergroup"><label for="regionSelect">REGION</label><select id="regionSelect"><option value="all">All U.S. regions</option><option value="northeast">Northeast</option><option value="midwest">Midwest</option><option value="south">South</option><option value="west">West</option></select></div>
       <div class="filtergroup"><label for="stateSelect">STATE</label><select id="stateSelect"><option value="all">All states + D.C.</option></select></div>
@@ -114,7 +126,7 @@
           <div class="data-coverage-mini" id="coverageMini"></div>
         </aside>
         <div class="panel map-panel">
-          <div class="panel-head"><div><div class="panel-kicker">CONTIGUOUS U.S. · AK + HI INSETS</div><h2 id="mapTitle">Annual retail-value potential</h2><p class="soft" id="mapSubtitle">A national, comparable screening score—not property bill savings.</p></div><div class="map-top-actions"><button id="zoomIn" class="round-btn" aria-label="Zoom in">+</button><button id="zoomOut" class="round-btn" aria-label="Zoom out">−</button><button id="zoomReset" class="round-btn" aria-label="Reset map zoom">⟲</button></div></div>
+          <div class="panel-head"><div><div class="panel-kicker">CONTIGUOUS U.S. · AK + HI INSETS</div><h2 id="mapTitle">Return on Cost (%)</h2><p class="soft" id="mapSubtitle">Annual retail-value potential ÷ $2,760 installed per kW DC · screening measure, not realized savings.</p></div><div class="map-top-actions"><button id="zoomIn" class="round-btn" aria-label="Zoom in">+</button><button id="zoomOut" class="round-btn" aria-label="Zoom out">−</button><button id="zoomReset" class="round-btn" aria-label="Reset map zoom">⟲</button></div></div>
           <div id="layerNotice" class="layer-notice" role="status" hidden></div><div class="map-stage" id="mapStage"><svg id="usaMap" role="img" aria-label="Interactive US county opportunity choropleth" viewBox="0 0 1040 711" preserveAspectRatio="xMidYMid meet"><g id="countyShapes"></g><g id="stateOutlines" pointer-events="none"></g><g id="mapLabels" pointer-events="none"><text x="138" y="575">ALASKA</text><text x="349" y="602">HAWAII</text></g></svg><div id="mapTooltip" class="map-tooltip" hidden></div></div>
           <div class="map-footer"><div class="legend" id="mapLegend"></div><div class="map-status" id="mapStatus"></div></div>
           <div class="v3-method-note"><strong>How the percentage works:</strong> Annual return on cost = annual retail-value potential ($/kW DC/year) ÷ $2,760 installed cost per kW DC × 100. <small>Illustrative gross retail-equivalent screening rate, not realized owner savings, net cash yield, IRR, or guaranteed ROI.</small></div><div class="map-caveat"><span class="caveat-icon">ⓘ</span> County solar modeled at a Census reference location. State-price estimates are visibly distinguished. <button class="linklike" data-go-tab="methods">How to read this</button></div>
@@ -150,6 +162,6 @@
 <script src="assets/data.js"></script>
 <script src="assets/geometry.js"></script>
 <script src="assets/enrichment-data.js"></script>
-<script src="assets/app.js?v=20261104-residential-rate"></script>
+<script src="assets/app.js?v=20261104-owen-return-bands"></script>
 </body>
 </html>

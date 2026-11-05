@@ -46,6 +46,35 @@ const V1_VALUE_COLORS=['#e6edf1','#b4cdd2','#78aab4','#3d788e','#173f5b'];
 let V1_QUALIFIED_ONLY=false;
 // V2 VISUAL HOTFIX END
 
+
+/* V3 fixed return-on-cost bands with smooth shading inside each band.
+   Every threshold is absolute and consistent across all filters.
+   Under 7% is gray; 7-8, 8-9, 9-15, 15-20, and 20%+ have distinct color families.
+   Boundary values 7/8/9/15/20 always enter the band on the right. */
+const V3_RETURN_BANDS = [
+ {min:0,max:7,label:'Under 7%',start:'#f6f8fa',end:'#dde4e8'},
+ {min:7,max:8,label:'7–8%',start:'#d7e8f0',end:'#bed9e7'},
+ {min:8,max:9,label:'8–9%',start:'#a7d2df',end:'#80bbce'},
+ {min:9,max:15,label:'9–15%',start:'#65b9bc',end:'#2f91a4'},
+ {min:15,max:20,label:'15–20%',start:'#2c799f',end:'#164b7a'},
+ {min:20,max:Infinity,label:'20%+',start:'#237e5c',end:'#0a3e42'}
+];
+function v3ReturnPct(r){return 100*value(r)/INSTALLED_COST_PER_KW_DC;}
+function v3ReturnBand(pct){
+ return Number.isFinite(pct)?V3_RETURN_BANDS.find(b=>pct<b.max)||V3_RETURN_BANDS[V3_RETURN_BANDS.length-1]:null;
+}
+function v3ReturnShade(pct){
+ const band=v3ReturnBand(pct);if(!band)return '#e9eef2';
+ const upper=Number.isFinite(band.max)?band.max:35;
+ const t=clamp((pct-band.min)/(upper-band.min),0,1);
+ const a=band.start.match(/[a-f\d]{2}/gi).map(x=>parseInt(x,16));
+ const b=band.end.match(/[a-f\d]{2}/gi).map(x=>parseInt(x,16));
+ return 'rgb('+a.map((v,i)=>Math.round(v+(b[i]-v)*t)).join(',')+')';
+}
+function v3ReturnLegend(){
+ return '<div class="v3-return-legend"><div class="v3-return-legend-title"><strong>Return on Cost (%)</strong><span>Fixed ranges · deeper shades indicate higher values</span></div><div class="v3-return-legend-grid">'+V3_RETURN_BANDS.map(b=>'<div class="v3-return-band"><i aria-hidden="true" style="background:linear-gradient(90deg,'+b.start+','+b.end+')"></i><span>'+b.label+'</span></div>').join('')+'</div></div>';
+}
+
 const METRIC = {
  value:['Annual retail-value potential','Annual modeled production × 2025 EIA average retail price; not actual realized savings.','$ / kWdc / year'],
  high:['High electricity price + high solar productivity','Top national third in both dimensions; requires both cutoffs.','Qualified counties'],
@@ -132,11 +161,7 @@ function pathColor(r,bounds,v1Cuts){
   const x=v1Tertile(p(r),v1Cuts.price),y=v1Tertile(solar(r),v1Cuts.solar);
   return x<0||y<0?'#e6eaee':V1_HIGH_MATRIX[2-y][x];
  }
- if(STATE.metric==='value'){
-  const v=value(r);if(!Number.isFinite(v))return'#e9eef2';
-  let q=0;while(q<v1Cuts.value.length&&v>=v1Cuts.value[q])q++;
-  return V1_VALUE_COLORS[q];
- }
+ if(STATE.metric==='value')return v3ReturnShade(v3ReturnPct(r));
  const v=metric(r);if(!Number.isFinite(v))return'#e9eef2';
  if(STATE.metric==='change'){
   const m=Math.max(1.0,Math.abs(bounds?.min??0),Math.abs(bounds?.max??0));
@@ -152,10 +177,10 @@ function showMapTooltip(e,r){
  x=Math.min(x,Math.max(12,bounds.width-275));
  y=clamp(y,6,Math.max(6,bounds.height-178));
  el.style.left=x+'px';el.style.top=y+'px';
- el.innerHTML=`<b>${esc(r.n)}, ${esc(r.st)}</b><span class="v3-tooltip-return">${((value(r)/INSTALLED_COST_PER_KW_DC)*100).toFixed(1)}%<small>ANNUAL RETURN ON COST</small></span><span class="v3-tooltip-value">${money(value(r))} annual retail-value potential / kW DC</span><span class="v3-tooltip-cost">$2,760 installed cost / kW DC</span><span class="v3-tooltip-quality">${esc(layerProvenance(r))}</span>`;
+ el.innerHTML=`<b>${esc(r.n)}, ${esc(r.st)}</b><span class="v3-tooltip-return">${v3ReturnPct(r).toFixed(1)}%<small>ANNUAL RETURN ON COST · ${v3ReturnBand(v3ReturnPct(r))?.label??'Unavailable'}</small></span><span class="v3-tooltip-value">${money(value(r))} annual retail-value potential / kW DC</span><span class="v3-tooltip-cost">$2,760 installed cost / kW DC</span><span class="v3-tooltip-quality">${esc(layerProvenance(r))}</span>`;
  el.hidden=false;
 }
-function updateMap(){const bounds=legendBounds(),v1Cuts=v1ReferenceCuts();const allPaths=$('countyShapes').querySelectorAll('path');let count=0,avail=0,fallback=0;for(const el of allPaths){const r=byId.get(el.dataset.fips),ok=matches(r);if(ok){count++;if(!isUtility(r))fallback++;}el.style.opacity=ok?'1':'.10';el.setAttribute('fill',pathColor(r,bounds,v1Cuts));el.classList.toggle('selected',r.f===STATE.selected);if(Number.isFinite(metric(r)))avail++;}const [title,sub,units]=METRIC[STATE.metric];$('mapTitle').textContent=title;$('mapSubtitle').textContent=sub;$('metricOptions').querySelectorAll('[data-metric]').forEach(b=>b.classList.toggle('active',b.dataset.metric===STATE.metric));const legend=$('mapLegend');if(STATE.metric==='high')legend.innerHTML=v1HighLegend(v1Cuts);else if(STATE.metric==='value')legend.innerHTML=v1ValueLegend(v1Cuts);else if(!bounds)legend.innerHTML='<span class="legend-caption">No verified data available for this measure yet</span>';else legend.innerHTML=`<span class="legend-caption">${esc(fmt(bounds.min,STATE.metric==='price'||STATE.metric==='change'?1:0))}</span><span class="legend-gradient"></span><span class="legend-caption">${esc(fmt(bounds.max,STATE.metric==='price'||STATE.metric==='change'?1:0))} <small>${esc(units)}</small></span>`;const v1Toggle=$('v1HighToggle');if(v1Toggle)v1Toggle.addEventListener('click',()=>{V1_QUALIFIED_ONLY=!V1_QUALIFIED_ONLY;updateMap()});$('mapStatus').textContent=`${fmt(count)} visible · ${STATE.metric==='change'?'51 state-level trends; not county tariffs':['multifamily','lihtc'].includes(STATE.metric)?fmt(filtered().filter(r=>Number.isFinite(metric(r))).length)+' with inventory data':fmt(fallback)+' state-price estimates'}`;
+function updateMap(){const bounds=legendBounds(),v1Cuts=v1ReferenceCuts();const allPaths=$('countyShapes').querySelectorAll('path');let count=0,avail=0,fallback=0;for(const el of allPaths){const r=byId.get(el.dataset.fips),ok=matches(r);if(ok){count++;if(!isUtility(r))fallback++;}el.style.opacity=ok?'1':'.10';el.setAttribute('fill',pathColor(r,bounds,v1Cuts));el.classList.toggle('selected',r.f===STATE.selected);if(Number.isFinite(metric(r)))avail++;}const [title,sub,units]=METRIC[STATE.metric];$('mapTitle').textContent=STATE.metric==='value'?'Return on Cost (%)':title;$('mapSubtitle').textContent=STATE.metric==='value'?'Annual retail-value potential ÷ $2,760 installed per kW DC · screening measure, not realized savings.':sub;$('metricOptions').querySelectorAll('[data-metric]').forEach(b=>b.classList.toggle('active',b.dataset.metric===STATE.metric));const legend=$('mapLegend');if(STATE.metric==='high')legend.innerHTML=v1HighLegend(v1Cuts);else if(STATE.metric==='value')legend.innerHTML=v3ReturnLegend();else if(!bounds)legend.innerHTML='<span class="legend-caption">No verified data available for this measure yet</span>';else legend.innerHTML=`<span class="legend-caption">${esc(fmt(bounds.min,STATE.metric==='price'||STATE.metric==='change'?1:0))}</span><span class="legend-gradient"></span><span class="legend-caption">${esc(fmt(bounds.max,STATE.metric==='price'||STATE.metric==='change'?1:0))} <small>${esc(units)}</small></span>`;const v1Toggle=$('v1HighToggle');if(v1Toggle)v1Toggle.addEventListener('click',()=>{V1_QUALIFIED_ONLY=!V1_QUALIFIED_ONLY;updateMap()});$('mapStatus').textContent=`${fmt(count)} visible · ${STATE.metric==='change'?'51 state-level trends; not county tariffs':['multifamily','lihtc'].includes(STATE.metric)?fmt(filtered().filter(r=>Number.isFinite(metric(r))).length)+' with inventory data':fmt(fallback)+' state-price estimates'}`;
 $('coverageMini').innerHTML=`<div class="coverage-heading">DATA COVERAGE · ALL U.S.</div><div class="coverage-row"><span>Solar PVGIS verified</span><strong>3,144 / 3,144</strong></div><div class="coverage-bar"><span style="width:100%"></span></div><div class="coverage-row"><span>Utility-specific price</span><strong>${STATE.sector==='res'?'1,052':'1,055'} / 3,144</strong></div><div class="coverage-bar"><span style="width:${STATE.sector==='res'?33.5:33.6}%"></span></div><div class="coverage-caveat">State fallback rates are distinct from utility-specific county estimates. <button id="coverageAction">Review sources</button></div>`;
 $('coverageAction').addEventListener('click',openDataHub);updateLayerState();updateDetail();updateRankings();renderStats();}
 const mapDrag={down:false,moved:false,at:null,box:null};
