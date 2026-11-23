@@ -1,17 +1,22 @@
-# ShineIQ | Multifamily Solar Market Atlas
+# Quarterra | ShineIQ Market Atlas V3
 
-Public, standalone dashboards hosted with free GitHub Pages.
+This repository contains the independently hosted public V3 Return on Cost market atlas for `https://quarterra.getshine.com/`.
 
-- Landing page: https://getshinebc.github.io/
-- Original V1: https://getshinebc.github.io/v1/
-- Latest V2: https://getshinebc.github.io/v2/
+## Source
 
-V1 and V2 retain the calculations and public data from their respective published source versions. The originals remain unchanged. Public-copy changes are limited to independent hosting, navigation between the three pages, and deployment packaging.
+Copied from the published GitHub Pages source: [GetShineBC/getshinebc.github.io/v3](https://github.com/GetShineBC/getshinebc.github.io/tree/main/v3) at main commit `18aae3a21e293d5d58f94b5ec687887d9a3d09fa`.
 
-Modeled retail-equivalent value is a screening metric, not guaranteed project savings. Actual savings depend on metering, applicable tariffs, self-consumption, export compensation, system design and project costs.
+The content is copied unchanged except that navigation links have been adjusted for hosting from the domain root. The logo, public county datasets, map scripts, and data downloads are included.
 
-V2 includes 2024 Census ACS data for 3,144 counties and 53,022 located historical HUD LIHTC project records. 1,906 in-scope HUD records remain unresolved and are omitted; the dashboard discloses them and provides the complete audit. County zeros mean no located records in that snapshot.
+## GitHub Pages setup
 
-Only public dashboard assets are included. No API keys, service access tokens, private configuration, source research archives, ETB licensed tariff data, or ShineScout/HubSpot contact records are included.
+In this **dedicated public repository**, choose Settings -> Pages -> Deploy from a branch -> `main` / `(root)`. Set Custom domain to `quarterra.getshine.com`. Preserve the root `CNAME` file. When DNS points correctly, enable Enforce HTTPS.
 
-See [Data sources and attribution](DATA_SOURCES.md) and the methodologies within each dashboard.
+DNS CNAME record managed by Avahi:
+- Host: `quarterra`
+- Type: `CNAME`
+- Value: `getshinebc.github.io`
+
+This source should not replace or modify the original V1/V2/V3 repository. For future V3 updates, cherry-pick the vetted source changes into this separate repo.
+
+**Return on Cost** is a modeled retail-value screening metric, not realized savings or an investment ROI.
